@@ -1,6 +1,7 @@
 import google.genai as genai
 from google.genai import types
 from dotenv import load_dotenv
+load_dotenv()
 import os
 apikey = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key = apikey)
@@ -8,11 +9,10 @@ class Geminiservice:
     def chat_with_gemini(self,user_input):
         try:
             response = client.models.generate_content(
-                model="gemini-3.0-flash",
+                model="gemini-3.5-flash",
                 config=types.GenerateContentConfig(
                     temperature = 0.2,
                     system_instruction="""
-                    You are a strict maths teacher
 
                     Rules:
                     - If uncertain, say you do not know.
