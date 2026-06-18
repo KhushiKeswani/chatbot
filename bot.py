@@ -5,7 +5,9 @@ from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, ForeignKey, select
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-
+from utils.security import create_access_token
+from utils.password import secure_pwd,verify_pwd
+from utils.auth import get_current_user
 DATABASE_URL = 'sqlite+aiosqlite:///./chatbot.db'
 
 # 1. Initialize DB components
@@ -26,6 +28,7 @@ class User(Base):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
     email = Column(String)
+    hashedpassword = Column(String)
     conversations = relationship("Conversation", back_populates="user")
 
 class Conversation(Base):
@@ -39,7 +42,6 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-# 2. Use modern Lifespan instead of the deprecated @api.on_event("startup")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs ON STARTUP
@@ -64,10 +66,12 @@ class ChatRequest(BaseModel):
 
 class UserRequest(BaseModel):
     email: str
-
-class ConvoRequest(BaseModel):
-    user_id: int
-
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 # --- Dependencies ---
 async def get_db():
     async with AsyncSessionLocal() as db:
@@ -78,21 +82,35 @@ def get_gemini():
     return api.state.gemini
 
 # --- API Endpoints ---
-@api.post('/user')
-async def create_user(request: UserRequest, db: AsyncSession = Depends(get_db)):
-    user = User(email=request.email)
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-    return {'id': user.id, 'email': user.email}
-
-@api.post('/convo')
-async def create_convo(request: ConvoRequest, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.id == request.user_id))
+@api.post('/signup')
+async def signup(request: SignupRequest,db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email==request.email))
+    user = result.scalar()
+    if user:
+        raise HTTPException(status_code = 400, detail = 'user already exist')
+    else:
+        hashedpassword = secure_pwd(request.password)
+        user = User(email = request.email,hashedpassword = hashedpassword)
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+@api.post('/login')
+async def login_user(request: LoginRequest,db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email==request.email))
     user = result.scalar()
     if not user:
-        raise HTTPException(status_code=404, detail='user not found')
-    convo = Conversation(user_id=request.user_id)
+        raise HTTPException(status_code=401,detail = 'invalid credentials')
+    if not verify_pwd(request.password,user.hashedpassword):
+        raise HTTPException(
+        status_code=401,
+        detail="invalid credentials"
+    )
+    token = create_access_token({'sub':user.id})
+    return {'accesstoken': token , 'token_type': 'bearer'}
+
+@api.post('/convo')
+async def create_convo(current_user: User = Depends(get_current_user),db: AsyncSession = Depends(get_db)):
+    convo = Conversation(user_id=current_user.id)
     db.add(convo)
     await db.commit()
     await db.refresh(convo)
@@ -102,18 +120,19 @@ async def create_convo(request: ConvoRequest, db: AsyncSession = Depends(get_db)
 async def chat(
     request: ChatRequest, 
     db: AsyncSession = Depends(get_db), 
-    gemini: Geminiservice = Depends(get_gemini) # 3. Injected via Dependency
+    gemini: Geminiservice = Depends(get_gemini),
+    current_user: User = Depends(get_current_user)
 ):
     result = await db.execute(select(Conversation).where(Conversation.id == request.convo_id))
     convo = result.scalar()
     if not convo:
         raise HTTPException(status_code=404, detail='convo not found')
-    
+    if convo.user_id != current_user.id:
+        raise HTTPException(
+        status_code=403,
+        detail="not your conversation")
     user_msg = Message(role='user', conversation_id=request.convo_id, content=request.message)
     db.add(user_msg)
-    
-    # NOTE: If gemini.chat_with_gemini is a blocking synchronous function, 
-    # it will freeze your active server during a request. Consider looking into an async alternative!
     ai_response = gemini.chat_with_gemini(request.message)
     print('response generated')
     
@@ -123,9 +142,14 @@ async def chat(
     return {'response': ai_response}
 
 @api.get('/history/{convo_id}')
-async def get_history(convo_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Message).where(Message.conversation_id == convo_id))
-    messages = result.scalars().all()
-    print('messages retrieved')
+async def get_history(convo_id: int, current_user: User=Depends(get_current_user),db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Conversation).where(Conversation.id == convo_id))
+    convo = result.scalar()
+    if(convo.user_id!=current_user.id):
+        raise HTTPException(status_code=403,detail="cannot access another person's history")
+    result = await db.execute(
+    select(Message).where(
+        Message.conversation_id == convo_id))
+    messages= result.scalars().all()
     return [{'role': message.role, 'content': message.content} for message in messages]
 
