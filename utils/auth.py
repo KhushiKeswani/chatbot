@@ -2,7 +2,8 @@ from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.security import JWTBearer, decodeJWT
-from bot import User,get_db
+from models import User
+from database import get_db
 
 async def get_current_user(
     token: str = Depends(JWTBearer()),

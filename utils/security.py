@@ -1,9 +1,6 @@
-from models import *
-from schemas import *
 from fastapi import HTTPException, Request
 from datetime import date, datetime, timedelta, time
 from typing import Union, Any, Optional
-import jwt
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from dotenv import load_dotenv
@@ -15,7 +12,6 @@ ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 )
-REFRESH_TOKEN_EXPIRE_MINUTES = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES"))
 
 def create_access_token(subject: Union[str, Any], expires_delta: int = None) -> str:
     if expires_delta is not None:
@@ -24,13 +20,13 @@ def create_access_token(subject: Union[str, Any], expires_delta: int = None) -> 
         expires_delta = datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode = {"exp": expires_delta, "sub": str(subject)}
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm = ALGORITHM)
     return encoded_jwt
 
 
 def decodeJWT(jwtoken: str):
     try:
-        payload = jwt.decode(jwtoken,SECRET_KEY, ALGORITHM)
+        payload = jwt.decode(jwtoken,SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except JWTError:
         return None
