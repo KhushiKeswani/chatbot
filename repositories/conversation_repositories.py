@@ -9,8 +9,8 @@ class Conversationrepository:
         convo = result.scalar()
         return convo
     async def create_convo(self,user_id):
-        convo = Conversation(user_id)
+        convo = Conversation(user_id = user_id)
         self.db.add(convo)
         await self.db.commit()
         await self.db.refresh(convo)
-        return {'convo_id': convo.id}
+        return convo

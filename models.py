@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, select
 from sqlalchemy.orm import declarative_base, relationship
-
-Base = declarative_base()
+from database import Base
 class Message(Base):
     __tablename__ = 'message'
     id = Column(Integer, primary_key=True, index=True)

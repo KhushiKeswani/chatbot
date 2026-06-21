@@ -11,7 +11,7 @@ from repositories.conversation_repositories import Conversationrepository
 from repositories.message_repositories import Messagerepository
 from models import User, Conversation,Message
 from database import init_db
-from database import get_db,AsyncSessionLocal
+from database import get_db,AsyncSessionLocal,Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,6 +54,9 @@ async def signup(request: SignupRequest,db: AsyncSession = Depends(get_db)):
     if user:
         raise HTTPException(status_code = 400, detail = 'user already exist')
     else:
+        print("PASSWORD =", request.password)
+        print("TYPE =", type(request.password))
+        print("LENGTH =", len(request.password))
         hashedpassword = secure_pwd(request.password)
         user = await repo.create_user(request.email,hashedpassword)
         return {"id": user.id,"email": user.email}

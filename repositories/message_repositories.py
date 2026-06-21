@@ -11,8 +11,8 @@ class Messagerepository:
         Message.conversation_id == convo_id))
         messages= result.scalars().all()
         return messages
-    async def save_message(self,role,content,convo_id):
-        msg = Message(role=role,content=content,conversation_id=convo_id)
+    async def save_message(self,role,content,conversation_id):
+        msg = Message(role=role,content=content,conversation_id=conversation_id)
         self.db.add(msg)
         await self.db.commit()
         return msg
