@@ -12,20 +12,21 @@ from repositories.message_repositories import Messagerepository
 from models import User, Conversation,Message
 from database import init_db
 from database import get_db,AsyncSessionLocal,Base
+from utils.logger import logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs ON STARTUP
-    print("Initializing Database...")
+    logger.info("initializing database")
     await init_db()
     
     # This defers the heavy Gemini initialization until after the loop starts
-    print("Initializing Gemini Service...")
+    logger.info("Initializing Gemini Service")
     app.state.gemini = Geminiservice() 
     
     yield
     # Any code written here will run ON SHUTDOWN (e.g., closing connections)
-    print("Shutting down...")
+    logger.info("Shutting down...")
 
 # Pass the lifespan context manager into FastAPI
 api = FastAPI(lifespan=lifespan)
@@ -54,9 +55,6 @@ async def signup(request: SignupRequest,db: AsyncSession = Depends(get_db)):
     if user:
         raise HTTPException(status_code = 400, detail = 'user already exist')
     else:
-        print("PASSWORD =", request.password)
-        print("TYPE =", type(request.password))
-        print("LENGTH =", len(request.password))
         hashedpassword = secure_pwd(request.password)
         user = await repo.create_user(request.email,hashedpassword)
         return {"id": user.id,"email": user.email}
