@@ -1,6 +1,7 @@
 import google.genai as genai
 from google.genai import types
 from dotenv import load_dotenv
+from utils.logger import logger
 load_dotenv()
 import os
 apikey = os.getenv("GEMINI_API_KEY")
@@ -8,6 +9,7 @@ client = genai.Client(api_key = apikey)
 class Geminiservice:
     def chat_with_gemini(self,user_input):
         try:
+            logger.info('sending request to Gemini')
             response = client.models.generate_content(
                 model="gemini-3.5-flash",
                 config=types.GenerateContentConfig(
@@ -25,5 +27,6 @@ class Geminiservice:
                 contents=user_input
             )
             return response.text
-        except Exception:
+        except Exception as e:
+            logger.error(f'Gemini API failed: {e}')
             return "service unavailable"

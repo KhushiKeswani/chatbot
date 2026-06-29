@@ -5,7 +5,7 @@ DATABASE_URL = 'sqlite+aiosqlite:///./chatbot.db'
 
 # 1. Initialize DB components
 engine = create_async_engine(DATABASE_URL)
-AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession)
+AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession,expire_on_commit=False)
 Base = declarative_base()
 
 async def get_db():
