@@ -1,0 +1,22 @@
+fastapi[standard]
+uvicorn==0.40.0
+
+# LLM
+google-genai
+
+# Database
+sqlalchemy
+aiosqlite
+
+# Authentication
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Environment Variables
+python-dotenv
+
+# Validation
+pydantic
+
+# Multipart form support (useful later for file uploads)
+python-multipart
