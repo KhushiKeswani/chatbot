@@ -1,5 +1,5 @@
 from fastapi import HTTPException, Request
-from datetime import date, datetime, timedelta, time
+from datetime import datetime, timedelta,UTC
 from typing import Union, Any, Optional
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
@@ -13,22 +13,22 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 )
 
-def create_access_token(subject: Union[str, Any], expires_delta: int = None) -> str:
+def create_access_token(subject: str | Any, expires_delta: int = None) -> str:
     if expires_delta is not None:
-        expires_delta = datetime.now() + expires_delta
+        expires_delta = datetime.now(UTC) + expires_delta
     else:
-        expires_delta = datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode = {"exp": expires_delta, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm = ALGORITHM)
     return encoded_jwt
 
 
-def decodeJWT(jwtoken: str):
-    try:
-        payload = jwt.decode(jwtoken,SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError:
+def decodeJWT(jwtoken: str): 
+    try: 
+        payload = jwt.decode(jwtoken,SECRET_KEY, algorithms=[ALGORITHM]) 
+        return payload 
+    except JWTError: 
         return None
 
 

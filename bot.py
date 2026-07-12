@@ -13,6 +13,7 @@ from models import User, Conversation,Message
 from database import init_db
 from database import get_db,AsyncSessionLocal,Base
 from utils.logger import logger
+from pydantic import EmailStr
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,10 +37,10 @@ class ChatRequest(BaseModel):
     convo_id: int
     message: str
 class SignupRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 

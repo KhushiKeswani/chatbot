@@ -10,6 +10,7 @@ aiosqlite
 
 # Authentication
 python-jose[cryptography]
+bcrypt==4.0.1
 passlib[bcrypt]
 
 # Environment Variables
