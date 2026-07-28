@@ -4,8 +4,7 @@ from dotenv import load_dotenv
 from utils.logger import logger
 load_dotenv()
 import os
-apikey = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key = apikey)
+client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
 class Geminiservice:
     def chat_with_gemini(self,user_input):
         try:
