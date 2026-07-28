@@ -1,6 +1,8 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
+from pathlib import Path
 
+Path("data").mkdir(exist_ok=True)
 DATABASE_URL = 'sqlite+aiosqlite:///./data/chatbot.db'
 
 # 1. Initialize DB components

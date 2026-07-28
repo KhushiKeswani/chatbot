@@ -21,3 +21,6 @@ pydantic
 
 # Multipart form support (useful later for file uploads)
 python-multipart
+
+ruff
+black

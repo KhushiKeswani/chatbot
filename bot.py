@@ -14,7 +14,7 @@ from database import init_db
 from database import get_db,AsyncSessionLocal,Base
 from utils.logger import logger
 from pydantic import EmailStr
-
+from services.redis_service import get_cached_response,cache_response
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs ON STARTUP
@@ -113,7 +113,16 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db), gemini:
             raise HTTPException(status_code=403,detail="not your conversation")
         await msgrepo.save_message(role='user', conversation_id=request.convo_id, content=request.message)
         logger.info(f'chat request received,convo_id = {convo.id},user_id = {current_user.id}')
+        cached = get_cached_response(request.message.strip().lower())
+        logger.info("Checking Redis cache...")
+        if cached:
+            logger.info("CACHE HIT")
+            cached_msg = await msgrepo.save_message(role='assistant', conversation_id=request.convo_id, content=cached)
+            return {'response': cached}
+        logger.info("CACHE MISS")
         ai_response = gemini.chat_with_gemini(request.message)
+        cache_response(request.message,ai_response)
+        logger.info("Stored response in Redis")
         logger.info(f'llm response generated,convo_id = {convo.id},user_id = {current_user.id}')
         ai_msg = await msgrepo.save_message(role='assistant', conversation_id=request.convo_id, content=ai_response)
         return {'response': ai_response}
