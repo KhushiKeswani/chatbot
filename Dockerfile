@@ -16,12 +16,7 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 
-COPY bot.py .
-COPY database.py .
-COPY models.py .
-COPY services ./services
-COPY repositories ./repositories
-COPY utils ./utils
+COPY . .
 
 EXPOSE 8000
 
