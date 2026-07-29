@@ -113,7 +113,11 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db), gemini:
             raise HTTPException(status_code=403,detail="not your conversation")
         await msgrepo.save_message(role='user', conversation_id=request.convo_id, content=request.message)
         logger.info(f'chat request received,convo_id = {convo.id},user_id = {current_user.id}')
-        cached = get_cached_response(request.message.strip().lower())
+        try:
+            cached = get_cached_response(request.message.strip().lower())
+        except Exception:
+            logger.warning("Redis unavailable")
+            cached = None
         logger.info("Checking Redis cache...")
         if cached:
             logger.info("CACHE HIT")

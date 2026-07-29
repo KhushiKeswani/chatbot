@@ -7,7 +7,10 @@ redis_client = redis.Redis(
 )
 
 def get_cached_response(key):
-    return redis_client.get(key)
+    try:
+        return redis_client.get(key)
+    except Exception:
+        return None
 
 def cache_response(key, value):
-    redis_client.set(key, value)
+    redis_client.set(key, value,ex=3600)
