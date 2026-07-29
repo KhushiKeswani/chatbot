@@ -14,7 +14,7 @@ from database import init_db
 from database import get_db
 from utils.logger import logger
 from pydantic import EmailStr
-from services.redis_service import get_cached_response,cache_response
+from services.redis_service import get_cached_response,cache_response,normalize_key
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs ON STARTUP
@@ -114,19 +114,33 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db), gemini:
         await msgrepo.save_message(role='user', conversation_id=request.convo_id, content=request.message)
         logger.info(f'chat request received,convo_id = {convo.id},user_id = {current_user.id}')
         try:
-            cached = get_cached_response(request.message.strip().lower())
+            normalized_key = normalize_key(request.message)
+            cached = get_cached_response(normalized_key)
         except Exception:
             logger.warning("Redis unavailable")
             cached = None
+            normalized_key = None
+
         logger.info("Checking Redis cache...")
+
         if cached:
             logger.info("CACHE HIT")
-            cached_msg = await msgrepo.save_message(role='assistant', conversation_id=request.convo_id, content=cached)
+            cached_msg = await msgrepo.save_message(
+                role='assistant',
+                conversation_id=request.convo_id,
+                content=cached
+            )
             return {'response': cached}
+
         logger.info("CACHE MISS")
         ai_response = gemini.chat_with_gemini(request.message)
-        cache_response(request.message,ai_response)
-        logger.info("Stored response in Redis")
+
+        try:
+            if normalized_key:
+                cache_response(normalized_key, ai_response)
+                logger.info("Stored response in Redis")
+        except Exception:
+            logger.warning("Failed to cache response, continuing without cache")
         logger.info(f'llm response generated,convo_id = {convo.id},user_id = {current_user.id}')
         ai_msg = await msgrepo.save_message(role='assistant', conversation_id=request.convo_id, content=ai_response)
         return {'response': ai_response}

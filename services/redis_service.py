@@ -12,5 +12,8 @@ def get_cached_response(key):
     except Exception:
         return None
 
+def normalize_key(message: str) -> str:
+    return message.strip().lower()
+
 def cache_response(key, value):
     redis_client.set(key, value,ex=3600)
