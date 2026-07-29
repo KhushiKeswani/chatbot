@@ -9,8 +9,6 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-print("SECRET_KEY loaded:", SECRET_KEY is not None)
-print("ALGORITHM:", ALGORITHM)
 ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 )
@@ -22,6 +20,10 @@ def create_access_token(subject: str | Any, expires_delta: int = None) -> str:
         expires_delta = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode = {"exp": expires_delta, "sub": str(subject)}
+    print("SECRET_KEY loaded:", SECRET_KEY is not None)
+    print("ALGORITHM:", ALGORITHM)
+    print(type(SECRET_KEY))
+    print(SECRET_KEY is None)
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm = ALGORITHM)
     return encoded_jwt
 
