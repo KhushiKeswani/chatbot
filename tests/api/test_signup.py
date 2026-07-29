@@ -8,7 +8,7 @@ def test_signup_success():
         "/signup",
         json={
             "username": "khushi",
-            "email": "khushi@gmail.com",
+            "email": "khushi4@gmail.com",
             "password": "password123"
         }
     )
@@ -68,7 +68,7 @@ def test_signup_missing_password():
         "/signup",
         json={
             "username": "khushi",
-            "email": "khushi@gmail.com"
+            "email": "khushi2@gmail.com"
         }
     )
 
@@ -94,7 +94,7 @@ def test_signup_short_password():
         "/signup",
         json={
             "username": "khushi",
-            "email": "khushi@gmail.com",
+            "email": "khushi1@gmail.com",
             "password": "123"
         }
     )

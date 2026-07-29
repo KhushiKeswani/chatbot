@@ -1,7 +1,6 @@
-import os
 import pytest
-from fastapi.testclient import TestClient
 import pytest_asyncio
+from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
     async_sessionmaker,
@@ -9,10 +8,9 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import StaticPool
 
-from bot import api
+from bot import api, get_gemini
 from database import Base, get_db
 from tests.mocks.fake_gemini import FakeGemini
-from bot import get_gemini
 
 # ------------------------
 # Test Database
@@ -32,9 +30,8 @@ TestingSessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
-
 # ------------------------
-# Override Dependency
+# Override Dependencies
 # ------------------------
 
 async def override_get_db():
@@ -43,32 +40,40 @@ async def override_get_db():
 
 
 api.dependency_overrides[get_db] = override_get_db
-api.dependency_overrides[get_db] = override_get_db
 api.dependency_overrides[get_gemini] = lambda: FakeGemini()
 
 # ------------------------
-# Setup Database
+# Fresh Database Before Every Test
 # ------------------------
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 async def setup_database():
 
     async with test_engine.begin() as conn:
+        # Start every test from scratch
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+
+    yield
+
+# ------------------------
+# Cleanup After Entire Test Session
+# ------------------------
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def cleanup_database():
 
     yield
 
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    await test_engine.dispose()
-    #if os.path.exists("test_chatbot.db"):
-        #os.remove("test_chatbot.db")
 
+    await test_engine.dispose()
 
 # ------------------------
 # Test Client
 # ------------------------
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def client():
     return TestClient(api)
