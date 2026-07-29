@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from services.llm_services import Geminiservice
-from pydantic import BaseModel
+from pydantic import BaseModel,Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.security import create_access_token
 from utils.password import secure_pwd,verify_pwd
@@ -9,9 +9,9 @@ from utils.auth import get_current_user
 from repositories.user_repositories import Userrepository
 from repositories.conversation_repositories import Conversationrepository
 from repositories.message_repositories import Messagerepository
-from models import User, Conversation,Message
+from models import User
 from database import init_db
-from database import get_db,AsyncSessionLocal,Base
+from database import get_db
 from utils.logger import logger
 from pydantic import EmailStr
 from services.redis_service import get_cached_response,cache_response
@@ -38,7 +38,7 @@ class ChatRequest(BaseModel):
     message: str
 class SignupRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8)
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
