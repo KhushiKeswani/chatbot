@@ -15,6 +15,7 @@ from database import get_db
 from utils.logger import logger
 from pydantic import EmailStr
 from services.redis_service import get_cached_response,cache_response,normalize_key
+import asyncio
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs ON STARTUP
@@ -57,7 +58,7 @@ async def signup(request: SignupRequest,db: AsyncSession = Depends(get_db)):
         if user:
             raise HTTPException(status_code = 400, detail = 'user already exist')
         else:
-            hashedpassword = secure_pwd(request.password)
+            hashedpassword = await asyncio.to_thread(secure_pwd, request.password)
             user = await repo.create_user(request.email,hashedpassword)
             logger.info(f'new user created : user_id = {user.id}')
             return {"id": user.id,"email": user.email}
@@ -81,8 +82,9 @@ async def login_user(request: LoginRequest,db: AsyncSession = Depends(get_db)):
         if not user:
             logger.warning(f"Failed login attempt for email={request.email}")
             raise HTTPException(status_code=401,detail = 'invalid credentials')
-        if not verify_pwd(request.password,user.hashedpassword):
-            raise HTTPException(status_code=401,detail="invalid credentials")
+        is_valid = await asyncio.to_thread(verify_pwd, request.password, user.hashedpassword)
+        if not is_valid:
+            raise HTTPException(status_code=401, detail="invalid credentials")
         token = create_access_token(str(user.id))
         return {'accesstoken': token , 'token_type': 'bearer'}
     except HTTPException:
@@ -115,7 +117,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db), gemini:
         logger.info(f'chat request received,convo_id = {convo.id},user_id = {current_user.id}')
         try:
             normalized_key = normalize_key(request.message)
-            cached = get_cached_response(normalized_key)
+            cached = await asyncio.to_thread(get_cached_response, normalized_key)
         except Exception:
             logger.warning("Redis unavailable")
             cached = None
@@ -133,11 +135,11 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db), gemini:
             return {'response': cached}
 
         logger.info("CACHE MISS")
-        ai_response = gemini.chat_with_gemini(request.message)
+        ai_response = await asyncio.to_thread(gemini.chat_with_gemini, request.message)
 
         try:
             if normalized_key:
-                cache_response(normalized_key, ai_response)
+                await asyncio.to_thread(cache_response, normalized_key, ai_response)
                 logger.info("Stored response in Redis")
         except Exception:
             logger.warning("Failed to cache response, continuing without cache")
