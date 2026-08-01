@@ -6,4 +6,4 @@ class FakeGemini:
     def chat_with_gemini(self, message: str) -> str:
         import time
         time.sleep(random.uniform(2.0, 3.0))  # simulate real Gemini latency
-        return "This is a mocked response for load testing."
+        return "Hello from Fake Gemini."
