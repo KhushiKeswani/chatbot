@@ -1,6 +1,8 @@
 # Chatbot API
 
-An asynchronous FastAPI backend for a conversational AI assistant, powered by Google Gemini, backed by SQLAlchemy with SQLite, secured with JWT-based authentication, and accelerated with a Redis caching layer.
+![CI](https://github.com/KhushiKeswani/chatbot/actions/workflows/ci.yaml/badge.svg)
+
+An asynchronous FastAPI backend for a conversational AI assistant, powered by Google Gemini, backed by SQLAlchemy with SQLite, secured with JWT-based authentication, and accelerated with a Redis ca[...]
 
 The codebase follows a **repository/service layered architecture**, separating routing, business logic, and data access for modularity and testability.
 
@@ -26,6 +28,7 @@ The codebase follows a **repository/service layered architecture**, separating r
 - **Structured logging** across authentication, chat, and history flows
 - **Async/await throughout** — all database and I/O operations are non-blocking
 - **Containerized** via multi-stage Dockerfile with minimal image size
+- CI pipeline — automated test runs via GitHub Actions on every push/PR
 
 ## Architecture
 
@@ -160,7 +163,7 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
-**Redis configuration:** The app connects to Redis at `localhost:6379` by default. To use a different host/port, update `services/redis_service.py` lines 3–6. If Redis is unavailable, the app continues without caching—no configuration needed.
+**Redis configuration:** The app connects to Redis at `localhost:6379` by default. To use a different host/port, update `services/redis_service.py` lines 3–6. If Redis is unavailable, the app c[...]
 
 ### Running locally
 
@@ -243,7 +246,12 @@ curl -X GET http://127.0.0.1:8000/history/1 \
 | **Validation**      | Pydantic                                    |
 | **Testing**         | pytest, pytest-asyncio                      |
 | **Containerization**| Docker (multi-stage)                        |
+| CI/CD               | GitHub Actions                              |
 | **Logging**         | Python standard logging                     |
+
+## CI/CD
+
+This repository uses a GitHub Actions workflow (`.github/workflows/ci.yaml`) that runs on push and pull requests to the `main` and `master` branches. The pipeline runs on `ubuntu-latest`, starts a Redis 7 service, installs project dependencies, runs the test suite with `pytest` (`python -m pytest tests -v`), and then builds the Docker image (`docker build -t chatbot:latest .`). The tests reference repository secrets (`GEMINI_API_KEY` and `SECRET_KEY`) where required.
 
 ## Known Limitations & Next Steps
 
